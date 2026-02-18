@@ -113,3 +113,4 @@ A comprehensive, full-stack enterprise solution designed to streamline the manag
 
 ## 📄 License
 Distributed under the MIT License. See `LICENSE` for more information.
+
