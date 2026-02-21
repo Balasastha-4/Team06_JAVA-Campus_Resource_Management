@@ -6,14 +6,18 @@ import {
     CheckCircle,
     XCircle,
     Clock,
-    HelpCircle,
-    BookOpen
+    BookOpen,
+    AlertCircle,
+    ArrowRight,
+    UserCheck,
+    Briefcase
 } from 'lucide-react';
+import StatusBadge from '../components/StatusBadge';
 
 const StaffDashboard = () => {
     const { user } = useAuth();
     const [data, setData] = useState({
-        pendingEvents: [], // Events assigned to staff for confirmation
+        pendingEvents: [],
         myBookings: [],
         borrowRequests: [],
         activeEvents: []
@@ -32,7 +36,7 @@ const StaffDashboard = () => {
 
                 setData({
                     activeEvents: activeEventsRes.data,
-                    pendingEvents: pendingEventsRes.data, // Should be filtered by backend for STAFF role
+                    pendingEvents: pendingEventsRes.data,
                     myBookings: bookingsRes.data,
                     borrowRequests: borrowsRes.data
                 });
@@ -50,7 +54,7 @@ const StaffDashboard = () => {
             let reason = null;
             if (action === 'reject') {
                 reason = prompt("Please provide a reason for rejection (e.g., 'Not available at this time'):");
-                if (reason === null) return; // User cancelled the prompt
+                if (reason === null) return;
             }
 
             const url = `/event-requests/${id}/${action}${reason ? `?reason=${encodeURIComponent(reason)}` : ''}`;
@@ -58,78 +62,121 @@ const StaffDashboard = () => {
 
             const res = await api.get('/event-requests/pending');
             setData(prev => ({ ...prev, pendingEvents: res.data }));
-            alert(`Event ${action === 'approve' ? 'confirmed' : 'declined'} successfully!`);
         } catch (error) {
             console.error("Action failed", error);
             alert("Action failed: " + (error.response?.data || error.message));
         }
     };
 
-    const StatusBadge = ({ status }) => {
-        let color = 'bg-gray-100 text-gray-800';
-        let Icon = HelpCircle;
-        if (status === 'APPROVED' || status === 'VERIFIED') { color = 'bg-green-100 text-green-800'; Icon = CheckCircle; }
-        else if (status.includes('PENDING')) { color = 'bg-yellow-100 text-yellow-800'; Icon = Clock; }
-        else if (status === 'REJECTED') { color = 'bg-red-100 text-red-800'; Icon = XCircle; }
-
-        return (
-            <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
-                <Icon size={12} /> {status.replace('_', ' ')}
-            </span>
-        );
-    };
-
-    if (loading) return <div>Loading Staff Dashboard...</div>;
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+    );
 
     return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-gray-900">Staff Dashboard</h1>
-
-            {/* Event Confirmation */}
-            {data.pendingEvents.length > 0 && (
-                <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
-                    <h2 className="text-lg font-bold text-gray-900 mb-4">Confirm Event In-Charge</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {data.pendingEvents.map(e => (
-                            <div key={e.id} className="p-4 border rounded-lg flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold">{e.eventName}</h3>
-                                    <p className="text-sm text-gray-600">{e.eventDate} | Organized by {e.userId}</p>
-                                    <p className="text-xs text-blue-600">Please confirm you will supervise this event.</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleEventAction(e.id, 'approve')} className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">Confirm</button>
-                                    <button onClick={() => handleEventAction(e.id, 'reject')} className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">Decline</button>
-                                </div>
-                            </div>
-                        ))}
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tight">Staff Portal</h1>
+                    <p className="text-slate-500 font-medium mt-1">Workspace for <span className="text-primary font-bold">{user?.name}</span></p>
+                </div>
+                <div className="flex gap-3">
+                    <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100 flex items-center gap-2">
+                        <Briefcase size={18} className="text-primary" />
+                        <span className="text-sm font-bold text-slate-700">Faculty Staff</span>
                     </div>
                 </div>
+            </header>
+
+            {/* Event Confirmation - Urgent Notification */}
+            {data.pendingEvents.length > 0 && (
+                <section>
+                    <div className="bg-primary/5 border border-primary/20 rounded-[2rem] p-8 md:p-10 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+
+                        <div className="relative z-10">
+                            <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                                <div className="p-2.5 bg-primary text-white rounded-xl shadow-lg shadow-primary/30">
+                                    <UserCheck size={24} />
+                                </div>
+                                Confirm Supervisions
+                            </h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {data.pendingEvents.map(e => (
+                                    <div key={e.id} className="bg-white p-6 rounded-3xl border border-primary/10 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="font-extrabold text-lg text-slate-900 mb-2">{e.eventName}</h3>
+                                            <p className="text-sm font-semibold text-slate-500 flex items-center gap-2">
+                                                <Calendar size={14} /> {e.eventDate}
+                                            </p>
+                                            <p className="text-xs font-bold text-primary mt-4 uppercase tracking-widest">Organized by {e.userId}</p>
+                                        </div>
+                                        <div className="flex gap-3 mt-8">
+                                            <button
+                                                onClick={() => handleEventAction(e.id, 'approve')}
+                                                className="btn btn-primary flex-1 py-3 text-sm"
+                                            >
+                                                Confirm
+                                            </button>
+                                            <button
+                                                onClick={() => handleEventAction(e.id, 'reject')}
+                                                className="btn btn-secondary flex-1 py-3 text-sm text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-100"
+                                            >
+                                                Decline
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* My Bookings */}
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                    <h2 className="text-lg font-bold mb-4">My Bookings</h2>
-                    <div className="space-y-3">
-                        {data.myBookings.map(b => (
-                            <div key={b.id} className="flex justify-between p-2 border-b">
-                                <span>{b.resourceId}</span>
+                <div className="card group">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <Calendar size={24} />
+                            </div>
+                            My Bookings
+                        </h2>
+                        <span className="text-slate-400 font-bold text-sm tracking-widest uppercase">Overview</span>
+                    </div>
+
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        {data.myBookings.length > 0 ? data.myBookings.map(b => (
+                            <div key={b.id} className="p-5 bg-slate-50 hover:bg-white rounded-2xl border border-transparent hover:border-slate-100 hover:shadow-md transition-all flex justify-between items-center group/item">
+                                <span className="font-bold text-slate-900 group-hover/item:text-primary transition-colors">{b.resourceId}</span>
                                 <StatusBadge status={b.status} />
                             </div>
-                        ))}
+                        )) : <p className="text-center py-10 text-slate-400 font-medium bg-slate-50 rounded-2xl">No bookings found.</p>}
                     </div>
                 </div>
+
                 {/* Library Requests */}
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><BookOpen size={20} /> Library Requests</h2>
-                    <div className="space-y-3">
-                        {data.borrowRequests.map(b => (
-                            <div key={b.id} className="flex justify-between p-2 border-b">
-                                <span>{b.bookId}</span>
+                <div className="card group">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <BookOpen size={24} />
+                            </div>
+                            Library Activity
+                        </h2>
+                        <span className="text-slate-400 font-bold text-sm tracking-widest uppercase">History</span>
+                    </div>
+
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        {data.borrowRequests.length > 0 ? data.borrowRequests.map(b => (
+                            <div key={b.id} className="p-5 bg-slate-50 hover:bg-white rounded-2xl border border-transparent hover:border-slate-100 hover:shadow-md transition-all flex justify-between items-center group/item">
+                                <span className="font-bold text-slate-900 group-hover/item:text-primary transition-colors">{b.bookId}</span>
                                 <StatusBadge status={b.status} />
                             </div>
-                        ))}
+                        )) : <p className="text-center py-10 text-slate-400 font-medium bg-slate-50 rounded-2xl">No library activity.</p>}
                     </div>
                 </div>
             </div>
